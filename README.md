@@ -27,30 +27,137 @@ Every claim, numeric metric, and percentage returned is verified against real da
 
 ## 🏗️ System Architecture
 
+### High-Level Overview
+
 ```mermaid
 flowchart TD
-    User([User / Analyst]) <-->|Natural Language Question| UI[DataMind Modern Web UI]
-    UI <-->|REST API /api/ask| API[FastAPI Backend Server]
+    User([🧑‍💻 User / Analyst]):::user <-->|Natural Language Question| UI[🌐 DataMind Web UI<br/>Vite + TypeScript]:::frontend
+    UI <-->|REST API /api/ask| API[⚡ FastAPI Backend<br/>Port 8000]:::backend
 
-    subgraph CoreEngine [DataMind Core Engine]
-        API --> Engine[Query Engine Orchestrator]
-        Engine <-->|Live Discovered Schema| SchemaMgr[Snowflake Schema Explorer]
-        Engine -->|Prompt: Question + Live Schema| GemmaAdapter[Gemma Adapter (Ollama / Local / API)]
-        GemmaAdapter -->|Candidate SQL + Reasoning Plan| Engine
-        
-        Engine -->|Candidate SQL| Validator{SQLGlot Safety Validator}
-        
-        Validator -->|Mutations / Multiple Statements / Prohibited DDL| Reject[🚫 Safe Rejection & Error Notice]
-        Validator -->|Validated Read-Only SELECT with Limits| SafeSQL[✅ Safe SQL Query]
-        
-        SafeSQL -->|Query Execution| SFConn[Snowflake Python Connector]
-        SFConn <-->|TLS 1.3 / Warehouse Execution| SF[(Snowflake Cloud Warehouse)]
-        
-        SFConn -->|Real Records & Query ID| Engine
-        Engine -->|Data + Grounding Check| Synthesizer[Evidence & Answer Synthesizer]
-        Synthesizer -->|Inspectable Evidence + Preview| API
+    subgraph CoreEngine ["🧠 DataMind Core Engine"]
+        direction TB
+        API --> Engine[🎯 Query Engine<br/>Orchestrator]:::core
+        Engine <-->|1. Live Schema Discovery| SchemaMgr[📋 Snowflake Schema<br/>Explorer & Cache]:::data
+        Engine -->|2. Question + Live Schema| GemmaAdapter[🤖 Gemma Adapter<br/>Ollama / GenAI API]:::ai
+        GemmaAdapter -->|3. Candidate SQL +<br/>Reasoning Plan| Engine
+
+        Engine -->|4. Untrusted SQL| Validator{🛡️ SQLGlot<br/>7-Layer Validator}:::security
+
+        Validator -->|❌ Blocked: Mutations /<br/>Injection / DDL| Reject[🚫 Safe Rejection<br/>& Error Notice]:::reject
+        Validator -->|✅ Validated Read-Only<br/>SELECT + LIMIT| SafeSQL[✅ Safe SQL Query]:::safe
+
+        SafeSQL -->|5. Execute Query| SFConn[❄️ Snowflake Connector<br/>TLS 1.3 Encrypted]:::data
+        SFConn <-->|6. Warehouse Execution<br/>30s Timeout| SF[(❄️ Snowflake Cloud<br/>Data Warehouse)]:::snowflake
+
+        SFConn -->|7. Real Records +<br/>Query ID + Latency| Engine
+        Engine -->|8. Grounding &<br/>Verification| Synthesizer[📊 Evidence & Answer<br/>Synthesizer]:::core
+        Synthesizer -->|9. Inspectable Evidence<br/>+ Data Preview| API
     end
+
+    classDef user fill:#6366f1,stroke:#4f46e5,color:#fff,stroke-width:2px
+    classDef frontend fill:#646CFF,stroke:#5558e6,color:#fff,stroke-width:2px
+    classDef backend fill:#009688,stroke:#00796b,color:#fff,stroke-width:2px
+    classDef core fill:#f59e0b,stroke:#d97706,color:#000,stroke-width:2px
+    classDef ai fill:#4285F4,stroke:#3367d6,color:#fff,stroke-width:2px
+    classDef security fill:#ef4444,stroke:#dc2626,color:#fff,stroke-width:2px
+    classDef data fill:#29B5E8,stroke:#0ea5e9,color:#000,stroke-width:2px
+    classDef snowflake fill:#29B5E8,stroke:#0284c7,color:#fff,stroke-width:3px
+    classDef reject fill:#991b1b,stroke:#7f1d1d,color:#fff,stroke-width:2px
+    classDef safe fill:#16a34a,stroke:#15803d,color:#fff,stroke-width:2px
 ```
+
+### 🔄 Request Lifecycle — Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    actor User as 🧑‍💻 User
+    participant UI as 🌐 Web UI
+    participant API as ⚡ FastAPI
+    participant QE as 🎯 Query Engine
+    participant Gemma as 🤖 Gemma (LLM)
+    participant Val as 🛡️ SQL Validator
+    participant SF as ❄️ Snowflake
+
+    User->>UI: "What country has the highest GDP in 2022?"
+    UI->>API: POST /api/ask {question}
+    API->>QE: process_question()
+
+    Note over QE: Step 1 — Schema Discovery
+    QE->>SF: SHOW COLUMNS / INFORMATION_SCHEMA
+    SF-->>QE: Live table & column metadata
+
+    Note over QE: Step 2 — AI Reasoning
+    QE->>Gemma: Prompt (question + schema context)
+    Gemma-->>QE: {sql, interpretation, columns}
+
+    Note over QE: Step 3 — Zero-Trust Validation
+    QE->>Val: validate(candidate_sql)
+    Val->>Val: 7-layer safety check
+    Val-->>QE: ✅ Validated SELECT + LIMIT 1000
+
+    Note over QE: Step 4 — Secure Execution
+    QE->>SF: Execute validated SQL (TLS 1.3)
+    SF-->>QE: Records + Query ID + Duration
+
+    Note over QE: Step 5 — Evidence Synthesis
+    QE->>QE: Ground answer against real data
+
+    QE-->>API: EvidenceResponse
+    API-->>UI: JSON {answer, sql, data, metadata}
+    UI-->>User: Rendered answer + chart + evidence panel
+```
+
+### 🛡️ Security Pipeline — 7 Layers of Defense
+
+```mermaid
+flowchart LR
+    SQL[/"🤖 AI-Generated<br/>Candidate SQL"/]:::input
+
+    SQL --> L1["Layer 1<br/>Keyword<br/>Pre-screen"]:::layer
+    L1 --> L2["Layer 2<br/>Statement<br/>Isolation"]:::layer
+    L2 --> L3["Layer 3<br/>AST Parse<br/>(SQLGlot)"]:::layer
+    L3 --> L4["Layer 4<br/>Root Expr<br/>Enforce"]:::layer
+    L4 --> L5["Layer 5<br/>Mutation<br/>Traversal"]:::layer
+    L5 --> L6["Layer 6<br/>Schema<br/>Whitelist"]:::layer
+    L6 --> L7["Layer 7<br/>Row Cap<br/>LIMIT 1000"]:::layer
+
+    L7 --> Safe[/"✅ Safe SQL<br/>Ready to Execute"/]:::safe
+
+    L1 -.->|"❌ DROP, DELETE<br/>ALTER, GRANT"| Block[🚫 Blocked]:::block
+    L2 -.->|"❌ Multi-statement<br/>injection"| Block
+    L4 -.->|"❌ Non-SELECT<br/>root"| Block
+    L5 -.->|"❌ Nested<br/>mutations"| Block
+    L6 -.->|"❌ Unauthorized<br/>schema"| Block
+
+    classDef input fill:#6366f1,stroke:#4f46e5,color:#fff,stroke-width:2px
+    classDef layer fill:#1e293b,stroke:#475569,color:#e2e8f0,stroke-width:2px
+    classDef safe fill:#16a34a,stroke:#15803d,color:#fff,stroke-width:2px
+    classDef block fill:#991b1b,stroke:#7f1d1d,color:#fff,stroke-width:2px
+```
+
+### 🧩 Component Overview
+
+| Layer | Component | Technology | Responsibility |
+|:---:|---|---|---|
+| 🌐 | **Web UI** | Vite + TypeScript + Vanilla CSS | Reactive SPA with dark-mode design, SVG charts, schema explorer, evidence inspector |
+| ⚡ | **API Server** | FastAPI (Python 3.10+) | REST endpoints (`/api/ask`, `/api/schema`, `/api/health`), CORS, lifespan management |
+| 🎯 | **Query Engine** | Python | Pipeline orchestration: intent detection → SQL generation → validation → execution → synthesis |
+| 🤖 | **Gemma Adapter** | Ollama / Google GenAI | Schema-aware prompt engineering, candidate SQL generation, JSON/SQL response extraction |
+| 🛡️ | **SQL Validator** | SQLGlot (Snowflake dialect) | 7-layer zero-trust validation: keyword filter → AST parse → mutation scan → schema check → row cap |
+| ❄️ | **Snowflake Adapter** | snowflake-connector-python | Connection pooling, schema discovery, query execution with 30s timeout, TLS 1.3 encryption |
+| 📊 | **Synthesizer** | Python | Evidence grounding, answer verification, audit trail assembly (SQL, Query ID, latency, preview) |
+
+### 🔧 Tech Stack
+
+| Category | Technologies |
+|---|---|
+| **AI / LLM** | Google Gemma 3 (4B) / Gemma 2 (9B) via Ollama, Google GenAI API |
+| **Backend** | Python 3.10+, FastAPI, Uvicorn, Pydantic v2 |
+| **Database** | Snowflake Cloud Data Warehouse, snowflake-connector-python |
+| **SQL Safety** | SQLGlot (AST parsing, Snowflake dialect) |
+| **Frontend** | Vite, TypeScript, Vanilla CSS (1,000+ line design system) |
+| **Testing** | Pytest (79 tests), custom evaluation benchmarks |
+| **DevOps** | Git, GitHub, MIT License |
 
 ---
 
