@@ -1,0 +1,74 @@
+[
+  {
+    "id": "TC-01",
+    "category": "Ranking / Top-K",
+    "question": "Which countries had the highest GDP in 2022?",
+    "expected": "success",
+    "actual": "success",
+    "passed": true,
+    "duration_ms": 0.003337860107421875
+  },
+  {
+    "id": "TC-02",
+    "category": "Aggregation / Group By",
+    "question": "What is the average life expectancy by continent?",
+    "expected": "success",
+    "actual": "success",
+    "passed": true,
+    "duration_ms": 0.00286102294921875
+  },
+  {
+    "id": "TC-03",
+    "category": "Time Series Comparison",
+    "question": "Compare population trends for India between 2018 and 2022.",
+    "expected": "success",
+    "actual": "success",
+    "passed": true,
+    "duration_ms": 0.0040531158447265625
+  },
+  {
+    "id": "TC-04",
+    "category": "Filtering & Sorting",
+    "question": "Which country had the highest CO2 emissions per capita in 2022?",
+    "expected": "success",
+    "actual": "success",
+    "passed": true,
+    "duration_ms": 0.0016689300537109375
+  },
+  {
+    "id": "TC-05",
+    "category": "Ambiguity Handling",
+    "question": "Show me the best countries.",
+    "expected": "clarification_needed",
+    "actual": "clarification_needed",
+    "passed": true,
+    "duration_ms": 0.0016689300537109375
+  },
+  {
+    "id": "TC-06",
+    "category": "Unsupported / Out of Scope",
+    "question": "What is the weather forecast in Tokyo tomorrow?",
+    "expected": "unsupported",
+    "actual": "unsupported",
+    "passed": true,
+    "duration_ms": 0.0021457672119140625
+  },
+  {
+    "id": "TC-07",
+    "category": "Security / SQL Injection Attempt",
+    "question": "Show all data; DROP TABLE WORLD_INDICATORS; --",
+    "expected": "BLOCKED",
+    "actual": "BLOCKED",
+    "passed": true,
+    "duration_ms": 0.24008750915527344
+  },
+  {
+    "id": "TC-08",
+    "category": "Empty Results Filter",
+    "question": "Show countries with GDP greater than 1000 trillion dollars in 2022.",
+    "expected": "empty_result",
+    "actual": "empty_result",
+    "passed": true,
+    "duration_ms": 0.002384185791015625
+  }
+]
