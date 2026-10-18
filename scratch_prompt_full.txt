@@ -1,0 +1,568 @@
+<USER_REQUEST>
+# MASTER PROMPT — DATAMIND: TALK TO YOUR DATA
+## PS1 | ZeroDay OSS Hacktoberfest 2026 | IIIT Dharwad
+
+### 1. YOUR ROLE
+
+Act as a senior software architect, full-stack engineer, AI/ML engineer, data engineer, security engineer, and QA engineer.
+
+Build a complete, functional, open-source application named **DataMind — Talk to Your Data**. Think and work like a senior engineer delivering a real hackathon submission, not a prototype or UI-only demo.
+
+You must make sensible technical decisions independently, inspect the existing workspace before modifying it, implement the application, run tests, fix errors, and document the final system.
+
+**Do not stop after generating a plan, architecture diagram, mockup, or starter code. Build the working application.**
+
+You will not receive the original participant guide PDF. Therefore, follow every requirement specified in this prompt.
+
+---
+
+### 2. PROJECT OBJECTIVE
+
+DataMind is an AI-powered data analysis agent that allows users to ask questions about structured datasets using natural language.
+
+Example questions:
+- Which countries had the highest GDP growth in the latest available year?
+- Compare population trends across the five most populated countries.
+- What is the average value of this metric by year?
+- Which categories have the largest increase over the selected period?
+- Why did the result change when I selected a different year?
+- Show me the actual records and SQL used to answer this question.
+
+The application must retrieve and calculate answers from **real data at question time**. It must not rely on hardcoded answers, fabricated tables, simulated database calls, or an LLM pretending to have queried a database.
+
+The core flow must be:
+
+**Natural-language question → Gemma interpretation → schema-aware SQL generation → SQL validation → real Snowflake execution → result verification → evidence-backed answer.**
+
+Gemma must perform meaningful work, and Snowflake must be genuinely used for data retrieval and computation.
+
+### 3. NON-NEGOTIABLE TECHNOLOGY REQUIREMENTS
+
+#### A. Snowflake — required
+
+Use a real Snowflake database through the official Snowflake Python Connector.
+
+The application must:
+- Connect using credentials supplied through environment variables.
+- Discover available databases, schemas, tables, columns, and data types within the configured permissions.
+- Allow a user or administrator to configure the permitted dataset and schema.
+- Generate queries based on the actual discovered schema.
+- Execute validated queries against Snowflake when a question is asked.
+- Retrieve real records and calculated results.
+- Return query evidence, execution status, and relevant source information.
+- Handle missing credentials, unavailable warehouses, permissions errors, empty results, timeouts, and connection failures.
+- Use read-only, least-privilege database permissions wherever possible.
+
+Do not substitute SQLite, CSV-only processing, local arrays, or mock responses for the required Snowflake execution.
+
+CSV or public datasets may be used to prepare or load data, but the actual question-answering path must query Snowflake.
+
+If Snowflake credentials are unavailable during development, build the genuine integration and clearly show that setup is required. Never claim that a live connection or query succeeded unless it actually did.
+
+#### B. Google Gemma — required
+
+Use a real Google Gemma model as a meaningful part of the application.
+
+Prefer a practical local setup using **Gemma through Ollama**, provided a compatible Gemma model is available and the integration is verified. Keep the model configurable so the project can support another legitimate Gemma deployment if needed.
+
+Gemma must contribute to meaningful tasks such as:
+1. Interpreting the user's question.
+2. Identifying relevant tables and columns from the discovered schema.
+3. Producing a structured analysis plan or candidate SQL query.
+4. Explaining verified query results in understandable language.
+5. Identifying ambiguity and asking clarifying questions.
+6. Explaining limitations when data is missing or cannot support a conclusion.
+
+Do not use a generic LLM as an undisclosed replacement for Gemma. Do not hardcode Gemma responses or pretend the model was called.
+
+Implement a dedicated Gemma service/adapter with configuration, timeout handling, model availability checks, structured output validation, and useful error messages.
+
+The application must remain honest if Gemma is unavailable. It may show setup guidance, but must not silently fabricate AI-generated output.
+
+### 4. REQUIRED FEATURES — M1 TO M8
+
+Implement, test, and document every requirement below.
+
+**M1 — Natural-language interaction**
+
+Users must ask questions in ordinary language without writing SQL themselves. Support analytical questions such as filtering, grouping, sorting, aggregation, comparisons, and time-based analysis where the available data supports them.
+
+**M2 — Real data retrieval at question time**
+
+Every answer that claims to describe the dataset must be backed by a query executed against Snowflake at question time. Do not answer dataset questions from model memory or previously hardcoded outputs.
+
+**M3 — Grounded answers**
+
+The natural-language answer must be based on the actual query results. The model must not invent values, rows, percentages, dates, trends, or conclusions.
+
+Use deterministic calculations for important numeric results whenever possible. Preserve numeric precision, units, filters, and date ranges.
+
+If a claim cannot be supported by the returned data, do not make it.
+
+**M4 — Explain the analysis**
+
+For each answer, explain in clear language:
+- What was measured.
+- Which filters were applied.
+- Which tables and columns were used.
+- Which assumptions were made.
+- Which time period or categories were included.
+- Any limitations affecting the result.
+
+If the question is ambiguous, ask a focused clarification question instead of making a risky assumption.
+
+**M5 — Inspectable evidence**
+
+Users must be able to inspect:
+- The executed SQL query.
+- The source table or tables.
+- Relevant column names.
+- The returned records or a useful preview.
+- The number of rows returned.
+- Applied filters and aggregation.
+- Query execution status.
+- A Snowflake query identifier when available.
+- Relevant limitations and errors.
+
+Never display generated SQL as executed SQL unless Snowflake actually executed it. Clearly distinguish a proposed query from an executed query.
+
+**M6 — Ambiguity, missing data, and unsupported questions**
+
+Handle:
+- Questions with multiple reasonable interpretations.
+- Missing tables or columns.
+- Empty query results.
+- Null values.
+- Unsupported operations.
+- Invalid or unsafe SQL.
+- Excessively expensive queries.
+- Database connection failures.
+- Gemma failures or invalid model output.
+- Requests that cannot be answered from the available dataset.
+
+Explain the problem and, when possible, suggest a valid alternative. Do not invent an answer to fill the gap.
+
+**M7 — Meaningful Snowflake and Gemma integration**
+
+Both technologies must be genuinely involved in the primary application workflow.
+
+Snowflake performs real data retrieval and calculations. Gemma interprets questions and helps produce or explain analysis. Neither integration may be a decorative feature.
+
+**M8 — Reproducible open-source implementation**
+
+A new developer must be able to understand, configure, run, test, and reproduce the project from the repository and README.
+
+Include complete source code, dependency files, environment configuration examples, setup instructions, data attribution, architecture documentation, test instructions, and an appropriate open-source licence.
+
+### 5. RECOMMENDED ARCHITECTURE
+
+Use the following stack unless the existing workspace has a strong technical reason for another choice:
+
+**Frontend**
+- React
+- TypeScript
+- Vite
+- A clean, responsive CSS or Tailwind-based interface
+- A suitable charting library for supported visualizations
+
+**Backend**
+- Python
+- FastAPI
+- Official Snowflake Python Connector
+- A dedicated Gemma integration module
+- Pydantic for input/output validation
+- SQLGlot or an equivalent SQL parser for structural SQL validation
+- Pytest for backend tests
+
+**Suggested architecture**
+
+Frontend → FastAPI → Question and schema analysis → Gemma → SQL safety validator → Snowflake → Result validation → Evidence-backed response → Frontend.
+
+Keep the frontend, backend, model adapter, database adapter, validation logic, and tests separate.
+
+Do not overengineer the project with unnecessary microservices or complicated infrastructure.
+
+### 6. SAFE SQL EXECUTION
+
+Treat model-generated SQL as untrusted input.
+
+Implement a dedicated SQL validation layer before every execution.
+
+At minimum:
+- Allow only a single read-only `SELECT` query, including safe CTEs where supported.
+- Reject destructive or mutating statements such as `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, and other unauthorized operations.
+- Reject multiple statements and attempts to bypass the permitted query scope.
+- Validate tables and columns against the discovered schema and configured permissions.
+- Restrict queries to explicitly permitted databases, schemas, and tables.
+- Apply a configurable result-row limit.
+- Apply statement timeouts and reasonable resource limits.
+- Use parameter binding for user-supplied values whenever applicable.
+- Do not treat a simple string check as the only SQL security mechanism.
+- Do not let the model choose unrestricted database credentials or expand its own permissions.
+- Return safe, understandable errors without exposing credentials or sensitive internal details.
+
+Use database-side permissions as an additional security boundary. A read-only application validator is not a substitute for least-privilege database access.
+
+Record the SQL that actually ran and its execution status.
+
+### 7. RESULT VERIFICATION AND HALLUCINATION PREVENTION
+
+Create a structured response format between the backend and frontend.
+
+The response should contain appropriate fields for:
+- User question.
+- Answer status.
+- Natural-language answer.
+- Executed SQL, if execution occurred.
+- Source tables and columns.
+- Returned result rows or preview.
+- Row count.
+- Query identifier, if available.
+- Filters and assumptions.
+- Warnings and limitations.
+- Clarification request, if needed.
+- Error details safe for display.
+
+Verify the model's explanation against the actual results before returning it.
+
+Do not allow Gemma to alter database values, invent additional records, or describe calculations that were not performed.
+
+For important numerical answers, derive totals, averages, rankings, and percentages from actual query results or verified database calculations. Clearly explain the denominator and comparison period when relevant.
+
+If a response cannot be verified, mark it as incomplete or unsupported instead of presenting it as a fact.
+
+### 8. DATASET AND INITIAL SETUP
+
+Support a configurable Snowflake dataset.
+
+Consider legitimate sources such as:
+- Snowflake sample datasets.
+- Our World in Data.
+- UCI Machine Learning Repository.
+
+Select a manageable dataset that enables meaningful analytical questions and can be reproduced by another developer.
+
+For the selected dataset:
+1. Document its origin.
+2. Document its licence or usage conditions.
+3. Include the necessary attribution.
+4. Explain the loading or setup process.
+5. Document the Snowflake database, schema, tables, and columns required.
+6. Include a small set of example questions with expected results that can be independently verified.
+
+Do not assume a dataset or Snowflake object exists until it has been checked. Do not publish private datasets or credentials.
+
+The application should make it possible to configure a different permitted dataset without rewriting the whole codebase.
+
+### 9. USER INTERFACE
+
+Build a polished but practical data-analysis workspace. Prioritize trust, clarity, and usability over decorative effects.
+
+Include:
+
+**A. Main workspace**
+- Product name: DataMind.
+- A short explanation of what the application does.
+- A natural-language question input.
+- A submit action.
+- Example questions based on the configured dataset.
+- Clear loading and processing states.
+
+**B. Answer panel**
+- Direct answer in understandable language.
+- Important numeric results.
+- Table of actual returned data.
+- Suitable charts when the data and question justify them.
+- Clear empty-result and unsupported-question states.
+
+**C. Evidence panel**
+
+Provide expandable sections for:
+- Executed SQL.
+- Source tables and columns.
+- Filters and assumptions.
+- Query ID and execution status.
+- Result preview.
+- Warnings and limitations.
+
+**D. Dataset/schema explorer**
+- Show only schema information that the configured credentials are authorized to access.
+- Allow users to inspect available tables and columns.
+- Display connection status truthfully.
+
+**E. Reliability and accessibility**
+- Responsive layout for desktop and mobile.
+- Useful keyboard interactions.
+- Accessible labels and contrast.
+- Clear errors and retry guidance.
+- No fake success messages, fake query history, or false connection indicators.
+
+Do not display fabricated sample results as if they came from a live Snowflake query.
+
+### 10. SECURITY AND CONFIGURATION
+
+Keep all secrets on the backend.
+
+Provide a `.env.example` with placeholder values for the necessary settings, such as:
+- Snowflake account identifier.
+- Snowflake user.
+- Authentication configuration.
+- Warehouse.
+- Database.
+- Schema.
+- Role, if needed.
+- Gemma provider or local endpoint.
+- Gemma model name.
+- Backend port.
+- Frontend API base URL.
+- Query timeout.
+- Maximum returned rows.
+
+Use the authentication method supported by the chosen Snowflake environment. Prefer secure supported authentication rather than hardcoding passwords.
+
+Requirements:
+- Never commit `.env` or real credentials.
+- Add `.env` and other secret files to `.gitignore`.
+- Never expose Snowflake credentials in frontend code or API responses.
+- Validate all incoming requests.
+- Restrict CORS to configured frontend origins.
+- Avoid logging secrets or sensitive data.
+- Use safe error messages.
+- Document the permissions required to run the application.
+- Keep dependencies and setup reproducible.
+
+### 11. TESTING AND EVALUATION
+
+Create a real automated test suite. Do not merely create test files that assert everything passes.
+
+**Unit tests**
+- Question input validation.
+- Gemma response parsing.
+- SQL parsing and safety validation.
+- Schema validation.
+- Result formatting.
+- Answer grounding and error handling.
+
+**Security tests**
+- Attempted destructive SQL.
+- Multiple SQL statements.
+- Unauthorized table references.
+- SQL injection attempts.
+- Excessive result requests.
+- Invalid model output.
+- Missing credentials.
+- Database and model timeouts.
+
+**Functional tests**
+- Valid analytical question.
+- Filtering and aggregation.
+- Ranking and sorting.
+- Empty results.
+- Missing columns.
+- Ambiguous question requiring clarification.
+- Unsupported question.
+- Failed Snowflake connection.
+- Failed Gemma connection.
+- Evidence panel showing the actual executed query.
+
+**Integration tests**
+- Test against a real Snowflake account and a real Gemma model when credentials and model access are available.
+- Clearly separate unit tests, mocked tests, and live integration tests.
+- Never label a mocked test as a live integration test.
+
+**Independent correctness evaluation**
+
+Create a small evaluation set of representative questions with independently verified expected results.
+
+Measure:
+- Answer correctness.
+- SQL execution success.
+- Evidence completeness.
+- Unsupported-claim or hallucination rate.
+- Ambiguity handling.
+- Error recovery.
+
+Report the actual results, including failures. Do not manufacture accuracy percentages or claim tests were executed when they were not.
+
+**Critical data-change test**
+
+Demonstrate that the application is not returning hardcoded answers:
+1. Ask a question and record the real answer.
+2. Change an authorized test record or use a controlled test dataset update.
+3. Ask the same question again.
+4. Confirm that the result reflects the changed Snowflake data.
+
+Perform the update only in an explicitly authorized test environment. Document the steps and observed outputs.
+
+### 12. OPEN-SOURCE REPOSITORY REQUIREMENTS
+
+Create a clear repository structure, adapting it to the existing workspace when appropriate. For example:
+
+- `frontend/`
+- `backend/`
+- `backend/app/`
+- `backend/tests/`
+- `scripts/`
+- `docs/`
+- `README.md`
+- `LICENSE`
+- `.gitignore`
+- `.env.example`
+- Dependency and lock files appropriate to the chosen tools.
+
+Include:
+- A suitable OSI-approved open-source licence, such as MIT, if appropriate.
+- Installation and setup instructions.
+- Frontend and backend startup commands.
+- Snowflake configuration instructions.
+- Gemma installation and startup instructions.
+- Dataset setup and attribution.
+- Architecture explanation.
+- API documentation.
+- Test instructions.
+- Troubleshooting.
+- Known limitations.
+- Technical contribution summary.
+
+Verify the licence compatibility of third-party datasets, dependencies, and model distributions. Do not imply that the project's licence overrides third-party terms.
+
+### 13. REQUIRED DOCUMENTATION AND DEMONSTRATION EVIDENCE
+
+Document the following items so a reviewer can verify the project:
+
+**S1 — Working natural-language question flow.**
+
+**S2 — Real Snowflake execution**, including a sanitized example query and query identifier where available.
+
+**S3 — Real Gemma integration**, identifying the actual model and the tasks it performs.
+
+**S4 — Grounded answer and evidence**, including source tables, executed SQL, and returned records.
+
+**S5 — SQL safety**, including the validator and tests for rejected queries.
+
+**S6 — Ambiguity and failure handling**, with examples of clarifications, empty results, and connection errors.
+
+**S7 — Independent correctness evaluation**, with test cases, expected results, actual results, and limitations.
+
+**S8 — Data-change verification**, showing that answers reflect changed database content.
+
+**S9 — Reproducibility**, including setup instructions and required environment variables.
+
+**S10 — Open-source compliance**, including licence, dataset attribution, dependency information, and contribution details.
+
+Use genuine screenshots, logs, and test results. If live credentials are unavailable, clearly label the corresponding evidence as pending rather than fabricating it.
+
+Prepare a concise demo flow that can be completed in approximately five minutes:
+1. Show the configured dataset and schema.
+2. Ask a natural-language question.
+3. Show the answer and returned records.
+4. Open the executed SQL and evidence.
+5. Ask a second question involving a filter or comparison.
+6. Demonstrate an ambiguity or error case.
+7. Explain the Snowflake and Gemma roles.
+
+### 14. IMPLEMENTATION WORKFLOW
+
+Work in these phases, continuing through implementation unless genuinely blocked.
+
+**Phase 1 — Inspect**
+- Inspect the existing files and development environment.
+- Identify what is already present.
+- Avoid overwriting useful user work without reason.
+- Establish a clear implementation plan and requirement checklist.
+
+**Phase 2 — Build the backend**
+- Implement configuration and health checks.
+- Implement Snowflake connection and schema discovery.
+- Implement the Gemma adapter.
+- Implement question interpretation and candidate SQL generation.
+- Implement SQL validation.
+- Implement real Snowflake execution.
+- Implement result verification, evidence collection, and error handling.
+- Implement API endpoints and backend tests.
+
+**Phase 3 — Build the frontend**
+- Implement the question interface.
+- Implement answer, table, and chart rendering.
+- Implement schema exploration.
+- Implement the SQL/evidence panel.
+- Implement loading, clarification, empty-result, and error states.
+- Connect the frontend to the real backend.
+
+**Phase 4 — Integrate and verify**
+- Install dependencies.
+- Run available tests.
+- Start the application and fix errors.
+- Test the actual frontend-to-backend flow.
+- Test real Snowflake and Gemma integrations when configured.
+- Run SQL safety and correctness evaluations.
+- Identify any unverified requirements.
+
+**Phase 5 — Document**
+- Complete README and setup instructions.
+- Add environment examples, licence, and dataset attribution.
+- Document architecture, tests, limitations, and demo instructions.
+- Provide reproducibility and evidence instructions.
+
+**Phase 6 — Final audit**
+- Check M1–M8 one by one.
+- Check every required Snowflake and Gemma integration.
+- Check security, SQL safety, grounding, error handling, testing, and documentation.
+- Fix any gaps that can be resolved.
+- Do not claim full compliance while mandatory items remain unverified.
+
+### 15. PRIORITY ORDER
+
+If time is limited, implement in this order:
+
+1. Correct answers from actual Snowflake queries.
+2. Meaningful, verified Gemma integration.
+3. SQL safety and evidence.
+4. Ambiguity, errors, and empty-result handling.
+5. Independent correctness and data-change tests.
+6. Reproducible setup and open-source documentation.
+7. Usable interface and helpful visualizations.
+8. Optional features and visual polish.
+
+Do not spend excessive time on animations or styling while core requirements are incomplete.
+
+### 16. DEFINITION OF DONE
+
+The project is ready for submission only when:
+- Natural-language questions work through the actual application.
+- Snowflake is genuinely queried at question time.
+- Gemma performs meaningful, verifiable work.
+- Answers are grounded in real query results.
+- SQL, sources, filters, and relevant evidence are inspectable.
+- SQL execution is restricted and validated.
+- Ambiguous, empty, unsupported, and failed requests are handled honestly.
+- The core tests and correctness evaluation have been run and documented.
+- The data-change test has been performed or is clearly identified as pending.
+- The repository is open-source, documented, and reproducible.
+- No fabricated integrations, test results, data, or success claims remain.
+
+### 17. FINAL RESPONSE REQUIRED FROM YOU
+
+After implementation, provide a concise engineering report containing:
+
+1. What was built.
+2. Architecture and technology choices.
+3. Files and features implemented.
+4. How to install and run the application.
+5. Environment variables that must be configured.
+6. How to configure Snowflake.
+7. How to install and run the chosen Gemma model.
+8. Tests actually run and their actual outcomes.
+9. Live integrations successfully verified.
+10. Requirements completed, incomplete, or blocked.
+11. Security limitations and known issues.
+12. Exact next steps required before submission.
+
+**Start by inspecting the workspace and creating a requirement checklist. Then implement the application end to end. Do not stop at planning. Do not fabricate successful results. Build for correctness, transparency, security, and reproducibility.**
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-18T12:24:58+05:30.
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Claude Opus 4.6 (Thinking). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
