@@ -3,6 +3,8 @@
 > **PS1 | ZeroDay OSS Hacktoberfest 2026 | IIIT Dharwad**  
 > AI-powered natural-language data analysis agent using **Google Gemma** and **Snowflake**, fortified with a **Zero-Trust SQL Validation Layer**.
 
+*Last updated: October 18, 2026*
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com)
